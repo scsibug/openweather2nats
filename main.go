@@ -6,6 +6,7 @@ import (
 	cloudevents "github.com/cloudevents/sdk-go/v2"
 	uuid "github.com/google/uuid"
 	nats "github.com/nats-io/nats.go"
+	yaml "gopkg.in/yaml.v2"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -86,6 +87,9 @@ func openWeatherTransform(wj map[string]interface{}, zipCode string) []byte {
 	if ok {
 		r["1h"] = rain["1h"].(float64)
 		r["3h"] = rain["3h"].(float64)
+	} else {
+		r["1h"] = 0.0
+		r["3h"] = 0.0
 	}
 	w["rain"] = r
 	// Snow amount
@@ -94,6 +98,9 @@ func openWeatherTransform(wj map[string]interface{}, zipCode string) []byte {
 	if ok {
 		s["1h"] = snow["1h"].(float64)
 		s["3h"] = snow["3h"].(float64)
+	} else {
+		s["1h"] = 0.0
+		s["3h"] = 0.0
 	}
 	w["snow"] = s
 	wb, err := json.Marshal(w)
@@ -112,48 +119,72 @@ func openWeatherToCloudEvent(data []byte) []byte {
 	event.SetData(cloudevents.ApplicationJSON, string(data))
 	bytes, err := json.Marshal(event)
 	if err != nil {
-		fmt.Println("We got an error: ")
-		fmt.Println(err)
+		panic(err)
 	}
-	fmt.Println("DATA:  " + string(data))
+	//fmt.Println("DATA:  " + string(data))
 	return bytes
 }
 
-func main() {
-	openWeatherApiKey := os.Getenv("OPENWEATHER_KEY")
-	openWeatherLat := os.Getenv("OPENWEATHER_LAT")
-	openWeatherLon := os.Getenv("OPENWEATHER_LON")
-	openWeatherApiUrl := openWeatherUrlPrefix +
-		"lat=" + openWeatherLat +
-		"&lon=" + openWeatherLon +
-		"&APPID=" + openWeatherApiKey
+type Config struct {
+	NATS      string `yaml:"natsServer"`
+	NATSTOPIC string `yaml:"natsTopic"`
+	APIKEY    string `yaml:"apikey"`
+	LAT       string `yaml:"lat"`
+	LON       string `yaml:"lon"`
+	ZIP       string `yaml:"zipcode"`
+}
 
-	// todo err if no api/url defined
-	natsServer := os.Getenv("NATS_SERVER")
-	// todo err if no server defined
-	zipCode := os.Getenv("ZIPCODE")
+func readConfig(filename string) (cfg Config) {
+	// Read application config
+	f, err := os.Open("config.yml")
+	if err != nil {
+		panic(err)
+	}
+	defer f.Close()
+	decoder := yaml.NewDecoder(f)
+	err = decoder.Decode(&cfg)
+	if err != nil {
+		panic(err)
+	}
+	return
+}
+
+func getAndPublish(apiurl string, zip string, nats *nats.Conn, topic string) {
+	w, werr := getWeather(apiurl, zip)
+	if werr == nil {
+		fmt.Println("publishing new event")
+		fmt.Println(string(w))
+		nats.Publish(topic, w)
+	}
+}
+
+func main() {
+	cfg := readConfig("config.yml")
+
+	// Get config items ready
+	openWeatherApiUrl := openWeatherUrlPrefix +
+		"lat=" + cfg.LAT +
+		"&lon=" + cfg.LON +
+		"&APPID=" + cfg.APIKEY
+	natsServer := cfg.NATS
+	zipCode := cfg.ZIP
+
+	// Topic for publishing events
 	natsTopic := "iot.weather"
-	if nt := os.Getenv("NATS_TOPIC"); nt != "" {
+	if nt := cfg.NATSTOPIC; nt != "" {
 		natsTopic = nt
 	}
 
+	// Connect to NATS server
 	nc, err := nats.Connect(natsServer)
 	defer nc.Close()
 	if err != nil {
 		log.Fatalf("Could not instantiate NATS client: %v", err)
+		panic(err)
 	}
-
+	// Get new event every 2 minutes
 	for {
-		w, werr := getWeather(openWeatherApiUrl, zipCode)
-		fmt.Println(string(w))
-		if werr == nil {
-			fmt.Println("Publishing")
-			nc.Publish(natsTopic, w)
-		}
+		go getAndPublish(openWeatherApiUrl, zipCode, nc, natsTopic)
 		time.Sleep(120 * time.Second)
 	}
-	if err != nil {
-		log.Fatal(err)
-	}
-
 }
