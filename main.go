@@ -30,6 +30,7 @@ type SnowVolume struct {
 }
 
 type Weather struct {
+	Date        float64    `json:"dt"`
 	Location    Location   `json:"location"`
 	Description []string   `json:"description",omitempty`
 	Temp        float64    `json:"temp"`
@@ -80,6 +81,7 @@ func openWeatherTransform(wj map[string]interface{}) Weather {
 	var w Weather
 	// Get main object
 	main, _ := wj["current"].(map[string]interface{})
+	fmt.Println(wj)
 	w.Temp = main["temp"].(float64)
 	w.FeelsLike = main["feels_like"].(float64)
 	w.UVIndex = main["uvi"].(float64)
@@ -87,17 +89,36 @@ func openWeatherTransform(wj map[string]interface{}) Weather {
 	w.Humidity = main["humidity"].(float64) / 100.0
 	w.Sunrise = main["sunrise"].(float64)
 	w.Sunset = main["sunset"].(float64)
+	w.Clouds = main["clouds"].(float64) / 100.0
+	w.WindDegree = main["wind_deg"].(float64)
+	w.WindSpeed = main["wind_speed"].(float64)
+	w.DewPoint = main["dew_point"].(float64)
 	w.Visibility = main["visibility"].(float64)
 	// Get weather description object
 	desc, _ := main["weather"].([]interface{})
 	descriptions := make([]string, 0)
 	for _, v := range desc {
 		val := v.(map[string]interface{})
-		fmt.Println(val["description"])
 		descriptions = append(descriptions, val["description"].(string))
 	}
 	w.Description = descriptions
-	fmt.Println(w)
+	// Rain amount
+	rain, ok := main["rain"].(map[string]interface{})
+	var r RainVolume
+	if ok {
+		r.OneHour = rain["1h"].(float64)
+		r.ThreeHour = rain["3h"].(float64)
+	}
+	w.Rain = r
+	// Snow amount
+	snow, ok := main["snow"].(map[string]interface{})
+	var s SnowVolume
+	if ok {
+		s.OneHour = snow["1h"].(float64)
+		s.ThreeHour = snow["3h"].(float64)
+	}
+	w.Snow = s
+
 	return w
 }
 
