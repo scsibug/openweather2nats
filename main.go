@@ -56,6 +56,7 @@ func openWeatherTransform(wj map[string]interface{}, zipCode string) []byte {
 	w["dt"] = main["dt"].(float64)
 	// Temperature
 	addFloatFromKey(&w, &main, "temp", "temp", 1.0)
+	fmt.Printf("Current temp is %1f F\n", w["temp"].(float64)*(9.0/5.0)-459.67)
 	addFloatFromKey(&w, &main, "feels_like", "feels_like", 1.0)
 	addFloatFromKey(&w, &main, "uvi", "uvi", 1.0)
 	addFloatFromKey(&w, &main, "pressure", "pressure", 1.0)
@@ -152,8 +153,7 @@ func readConfig(filename string) (cfg Config) {
 func getAndPublish(apiurl string, zip string, nats *nats.Conn, topic string) {
 	w, werr := getWeather(apiurl, zip)
 	if werr == nil {
-		fmt.Println("publishing new event")
-		fmt.Println(string(w))
+		//fmt.Println(string(w))
 		nats.Publish(topic, w)
 	}
 }
