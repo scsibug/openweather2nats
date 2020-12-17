@@ -12,7 +12,6 @@ stages:
   - stage: build
     jobs:
       - job: build_image
-        dependsOn: build_content
         displayName: Build Image
         steps:
           - task: Docker@2
