@@ -79,10 +79,6 @@ func openWeatherTransform(wj map[string]interface{}) Weather {
 	// Create the empty weather struct
 	var w Weather
 	// Get main object
-	//fmt.Println(wj)
-
-	// current:map[clouds:1 dew_point:271.86 dt:1.608169023e+09 feels_like:273.25 humidity:74 pressure:1021 sunrise:1.608125108e+09 sunset:1.60816106e+09 temp:275.85 uvi:0 visibility:10000
-
 	main, _ := wj["current"].(map[string]interface{})
 	w.Temp = main["temp"].(float64)
 	w.FeelsLike = main["feels_like"].(float64)
@@ -92,16 +88,11 @@ func openWeatherTransform(wj map[string]interface{}) Weather {
 	w.Sunrise = main["sunrise"].(float64)
 	w.Sunset = main["sunset"].(float64)
 	w.Visibility = main["visibility"].(float64)
-	// Weather description object
-	desc, ok := main["weather"].([]interface{})
-	fmt.Printf("%T\n", main["weather"])
-	if !ok {
-		fmt.Println("Did not get weather object")
-	}
+	// Get weather description object
+	desc, _ := main["weather"].([]interface{})
 	descriptions := make([]string, 0)
 	for _, v := range desc {
 		val := v.(map[string]interface{})
-		// Gather each "description" key from the array
 		fmt.Println(val["description"])
 		descriptions = append(descriptions, val["description"].(string))
 	}
