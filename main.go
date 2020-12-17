@@ -82,6 +82,7 @@ func openWeatherTransform(wj map[string]interface{}) Weather {
 	// Get main object
 	main, _ := wj["current"].(map[string]interface{})
 	fmt.Println(wj)
+	w.Date = main["dt"].(float64)
 	w.Temp = main["temp"].(float64)
 	w.FeelsLike = main["feels_like"].(float64)
 	w.UVIndex = main["uvi"].(float64)
