@@ -1,0 +1,13 @@
+---
+# Hostname and port of a NATS server
+natsServer: localhost:4222
+# Topic to publish events to
+natsTopic: iot.weather
+# Latitude and longitude for weather events
+lat: 31.00
+lon: -96.50
+# Zip code to associate with this message
+zipcode: "10001"
+# OpenWeather API key
+apikey: "1b79d6e1abc0ddbb5d5c0b2fed60e"
+...
