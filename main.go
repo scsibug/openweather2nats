@@ -49,7 +49,7 @@ type Weather struct {
 	Snow        SnowVolume `json:"snow",omitempty`
 }
 
-func getWeather(url string) ([]byte, error) {
+func getWeather(url string, zipCode string) ([]byte, error) {
 	resp, err := http.Get(url)
 	if err != nil {
 		log.Fatalln(err)
@@ -63,7 +63,7 @@ func getWeather(url string) ([]byte, error) {
 	if err := json.Unmarshal(body, &dat); err != nil {
 		panic(err)
 	}
-	weather := openWeatherTransform(dat)
+	weather := openWeatherTransform(dat, zipCode)
 	// create JSON
 	wj, err := json.Marshal(weather)
 	if err != nil {
@@ -75,13 +75,12 @@ func getWeather(url string) ([]byte, error) {
 	return ce, nil
 }
 
-func openWeatherTransform(wj map[string]interface{}) Weather {
+func openWeatherTransform(wj map[string]interface{}, zipCode string) Weather {
 	// Create a JSON structure matching our weather json schema
 	// Create the empty weather struct
 	var w Weather
 	// Get main object
 	main, _ := wj["current"].(map[string]interface{})
-	fmt.Println(wj)
 	w.Date = main["dt"].(float64)
 	w.Temp = main["temp"].(float64)
 	w.FeelsLike = main["feels_like"].(float64)
@@ -95,6 +94,12 @@ func openWeatherTransform(wj map[string]interface{}) Weather {
 	w.WindSpeed = main["wind_speed"].(float64)
 	w.DewPoint = main["dew_point"].(float64)
 	w.Visibility = main["visibility"].(float64)
+	// Get location
+	var loc Location
+	loc.Lat = wj["lat"].(float64)
+	loc.Lon = wj["lon"].(float64)
+	loc.Zip = zipCode
+	w.Location = loc
 	// Get weather description object
 	desc, _ := main["weather"].([]interface{})
 	descriptions := make([]string, 0)
@@ -144,6 +149,7 @@ func main() {
 	// todo err if no api/url defined
 	natsServer := os.Getenv("NATS_SERVER")
 	// todo err if no server defined
+	zipCode := os.Getenv("ZIPCODE")
 	natsTopic := "iot.weather"
 	if nt := os.Getenv("NATS_TOPIC"); nt != "" {
 		natsTopic = nt
@@ -156,7 +162,7 @@ func main() {
 	}
 
 	for {
-		w, werr := getWeather(openWeatherApiUrl)
+		w, werr := getWeather(openWeatherApiUrl, zipCode)
 		fmt.Println(string(w))
 		if werr == nil {
 			fmt.Println("Publishing")
