@@ -20,7 +20,6 @@ stages:
               containerRegistry: 'Yashica'
               repository: 'azdevops/openweather2nats'
               command: 'buildAndPush'
-              buildContext: $(Pipeline.Workspace)
               tags: |
                 $(Build.BuildId)
                 latest
