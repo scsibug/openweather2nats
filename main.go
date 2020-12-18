@@ -47,7 +47,7 @@ func addFloatFromKey(w *map[string]interface{}, api *map[string]interface{}, api
 }
 
 // openWeatherTransform converts JSON structure to our own Weather format
-func openWeatherTransform(wj map[string]interface{}, zipCode string) []byte {
+func openWeatherTransform(wj map[string]interface{}, zipCode string) map[string]interface{} {
 	// Create a JSON structure matching our weather json schema
 	// Create the empty weather struct
 	w := make(map[string]interface{})
@@ -104,20 +104,16 @@ func openWeatherTransform(wj map[string]interface{}, zipCode string) []byte {
 		s["3h"] = 0.0
 	}
 	w["snow"] = s
-	wb, err := json.Marshal(w)
-	if err != nil {
-		panic(err)
-	}
-	return wb
+	return w
 }
 
-func openWeatherToCloudEvent(data []byte) []byte {
+func openWeatherToCloudEvent(data map[string]interface{}) []byte {
 	id := uuid.Must(uuid.NewRandom())
 	event := cloudevents.NewEvent()
 	event.SetID(id.String())
 	event.SetSource("https://openweathermap.org/")
 	event.SetType("com.wellorder.iot.weather")
-	event.SetData(cloudevents.ApplicationJSON, string(data))
+	event.SetData(cloudevents.ApplicationJSON, data)
 	bytes, err := json.Marshal(event)
 	if err != nil {
 		panic(err)
