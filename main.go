@@ -115,8 +115,8 @@ func openWeatherToCloudEvent(data []byte) []byte {
 	id := uuid.Must(uuid.NewRandom())
 	event := cloudevents.NewEvent()
 	event.SetID(id.String())
-	event.SetSource("com.wellorder.iot.weather")
-	event.SetType("https://openweathermap.org/")
+	event.SetSource("https://openweathermap.org/")
+	event.SetType("com.wellorder.iot.weather")
 	event.SetData(cloudevents.ApplicationJSON, string(data))
 	bytes, err := json.Marshal(event)
 	if err != nil {
