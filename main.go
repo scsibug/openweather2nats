@@ -27,8 +27,9 @@ func getWeather(url string, zipCode string) ([]byte, error) {
 	}
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
-
+	//fmt.Printf("%s", string(body))
 	var dat map[string]interface{}
+	//fmt.Printf("%+v\n", dat)
 	// parse JSON
 	if err := json.Unmarshal(body, &dat); err != nil {
 		panic(err)
@@ -86,8 +87,16 @@ func openWeatherTransform(wj map[string]interface{}, zipCode string) map[string]
 	rain, ok := main["rain"].(map[string]interface{})
 	r := make(map[string]interface{})
 	if ok {
-		r["1h"] = rain["1h"].(float64)
-		r["3h"] = rain["3h"].(float64)
+		if ra, found := rain["1h"]; found {
+			r["1h"] = ra.(float64)
+		} else {
+			r["1h"] = 0.0
+		}
+		if rb, found := rain["3h"]; found {
+			r["3h"] = rb.(float64)
+		} else {
+			r["3h"] = 0.0
+		}
 	} else {
 		r["1h"] = 0.0
 		r["3h"] = 0.0
