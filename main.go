@@ -69,6 +69,7 @@ func openWeatherTransform(wj map[string]interface{}, zipCode string) map[string]
 	addFloatFromKey(&w, &main, "wind_speed", "wind_speed", 1.0)
 	addFloatFromKey(&w, &main, "dew_point", "dew_point", 1.0)
 	addFloatFromKey(&w, &main, "visibility", "visibility", 1.0)
+	fmt.Printf("Cloud cover is %v %%\n", main["clouds"])
 	// Get location
 	l := make(map[string]interface{})
 	l["lat"] = wj["lat"].(float64)
@@ -106,8 +107,16 @@ func openWeatherTransform(wj map[string]interface{}, zipCode string) map[string]
 	snow, ok := main["snow"].(map[string]interface{})
 	s := make(map[string]interface{})
 	if ok {
-		s["1h"] = snow["1h"].(float64)
-		s["3h"] = snow["3h"].(float64)
+		if sa, found := snow["1h"]; found {
+			s["1h"] = sa.(float64)
+		} else {
+			s["1h"] = 0.0
+		}
+		if sb, found := snow["3h"]; found {
+			s["3h"] = sb.(float64)
+		} else {
+			s["3h"] = 0.0
+		}
 	} else {
 		s["1h"] = 0.0
 		s["3h"] = 0.0
